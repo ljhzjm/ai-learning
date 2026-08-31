@@ -1,0 +1,16 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# 环境变量(密钥不进仓库!)
+.env
+.env.*
+
+# Node
+node_modules/
+
+# 系统
+.DS_Store
+Thumbs.db
