@@ -11,6 +11,7 @@
   python study.py skip 3           跳过任务 3(不做了,进度指针越过它)
   python study.py remove 3         从今日清单删掉任务 3(仅限未完成/已跳过的)
   python study.py sync [日期]      同步清单:读取你手动打的勾,规范化标题与状态
+  python study.py watch           后台监听任务文件:一变就自动同步,打勾后无需发消息
   python study.py finish [--draft] 今日结束:生成学习笔记(骨架)+ 提交推送 GitHub
   python study.py publish [日期]    把指定日期的笔记+任务文件提交并推送
   python study.py log              最近完成记录(简历素材)
@@ -27,6 +28,7 @@ import json
 import re
 import subprocess
 import sys
+import time
 from datetime import date
 from pathlib import Path
 
@@ -404,6 +406,44 @@ def cmd_undo(args):
     print(f"↩️ 任务 {num}「{t['title']}」已恢复为未完成")
 
 
+def _tasks_snapshot():
+    """任务目录内容快照:路径 → 文件字节(用内容比对,避免重写触发死循环)。"""
+    snap = {}
+    if TASKS_DIR.exists():
+        for p in TASKS_DIR.glob("今日任务_*.md"):
+            try:
+                snap[p] = p.read_bytes()
+            except OSError:
+                continue
+    return snap
+
+
+def cmd_watch(args):
+    """监听任务文件变化,一变就自动同步。Ctrl+C 停止。"""
+    print("👀 开始监听 tasks/ 目录 —— 打完勾自动同步,无需发消息(Ctrl+C 停止)", flush=True)
+    last = _tasks_snapshot()
+    try:
+        while True:
+            time.sleep(2)
+            cur = _tasks_snapshot()
+            for p, data in cur.items():
+                if data == last.get(p):
+                    continue
+                try:
+                    h, ts = parse_tasks(p)
+                    rendered = render_tasks(h, ts)
+                    if p.read_bytes() != rendered.encode("utf-8"):
+                        p.write_text(rendered, encoding="utf-8")
+                    stamp = time.strftime("%H:%M:%S")
+                    print(f"🔄 {stamp} 检测到 {p.name} 变化,已自动同步:", flush=True)
+                    print_today(h, ts)
+                except OSError:
+                    continue
+            last = cur
+    except KeyboardInterrupt:
+        print("👋 已停止监听")
+
+
 def cmd_sync(args):
     """读取用户手打的勾,把文件规范成统一格式(标题 ✅、状态一致)。"""
     d = args[0] if args else today_str()
@@ -643,6 +683,8 @@ def main():
         cmd_remove(rest)
     elif cmd == "sync":
         cmd_sync(rest)
+    elif cmd == "watch":
+        cmd_watch(rest)
     elif cmd == "finish":
         cmd_finish(rest)
     elif cmd == "publish":
