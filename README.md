@@ -20,9 +20,11 @@ ai-learning/
 ### 每日使用循环
 
 1. 开始学习:`python study.py today` 看今日任务(首次会自动从桌面学习计划生成)
-2. 完成一个任务:跟 Claude 说「完成 XX」,或自己跑 `python study.py done <编号> 备注`
+2. 完成一个任务:**直接在任务文件里把 `- [ ]` 改成 `- [x]` 打勾**,然后跑 `python study.py sync` 同步(或跟 Claude 说「打勾了」);也可以不碰文件,跑 `python study.py done <编号> 备注`
 3. 学有余力:`python study.py next` 把下一个计划日接进来(不按日历走也没关系)
 4. 收工:`python study.py finish` 生成当日笔记并推送到 GitHub
+
+> 打勾是唯一的源操作:任务的完成状态完全由 checkbox 决定,sync/finish/publish 会自动把标题上的 ✅ 标记和状态同步一致。
 
 ### 命令速查
 
@@ -34,6 +36,7 @@ ai-learning/
 | `python study.py next` | 把下一个计划日追加进今日清单 |
 | `python study.py add 描述//验收` | 加一个计划外任务 |
 | `python study.py undo 3` / `skip 3` / `remove 3` | 取消完成 / 跳过(指针越过)/ 删除 |
+| `python study.py sync [日期]` | 读取你手动打的勾,同步标题状态与格式 |
 | `python study.py finish [--draft]` | 今日结束:生成笔记 + 提交推送(--draft 只生成不推) |
 | `python study.py publish [日期]` | 手动把指定日期的笔记+任务推送 |
 | `python study.py log` | 最近完成记录(简历素材) |

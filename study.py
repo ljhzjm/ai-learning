@@ -10,6 +10,7 @@
   python study.py undo 3           取消任务 3 的完成标记
   python study.py skip 3           跳过任务 3(不做了,进度指针越过它)
   python study.py remove 3         从今日清单删掉任务 3(仅限未完成/已跳过的)
+  python study.py sync [日期]      同步清单:读取你手动打的勾,规范化标题与状态
   python study.py finish [--draft] 今日结束:生成学习笔记(骨架)+ 提交推送 GitHub
   python study.py publish [日期]    把指定日期的笔记+任务文件提交并推送
   python study.py log              最近完成记录(简历素材)
@@ -166,10 +167,19 @@ def parse_tasks(path: Path):
         if s:                                       # 其他非空行原样保留
             cur["extra"].append(s)
     for t in tasks:
-        if t["header_status"] != "pending":
+        # 打勾是唯一的源操作:有勾看勾,标题上的 ✅/⏭️ 只作展示(sync 会统一重写)
+        if t["checkboxes"]:
+            marks = [cb[0] for cb in t["checkboxes"]]
+            if "pending" in marks:
+                t["status"] = "pending"
+            elif all(m == "done" for m in marks):
+                t["status"] = "done"
+            elif all(m == "skipped" for m in marks):
+                t["status"] = "skipped"
+            else:
+                t["status"] = "pending"
+        else:
             t["status"] = t["header_status"]
-        elif t["checkboxes"] and all(cb[0] == "done" for cb in t["checkboxes"]):
-            t["status"] = "done"
         t.pop("header_status")
     return "\n".join(header_lines), tasks
 
@@ -183,8 +193,11 @@ def render_tasks(header: str, tasks) -> str:
         if t["plan_key"]:
             out.append(f"- 计划:{plan_line(t['plan_key'])}")
             out.append(f"- 验收:{t['accept']}")
-        mark = {"done": "[x]", "skipped": "[-]", "pending": "[ ]"}[t["status"]]
-        for _, cb_text in t["checkboxes"]:          # 任务级状态决定勾选样式
+        for cb_mark, cb_text in t["checkboxes"]:
+            # 任务级状态:done/skipped 统一勾选样式;pending 保留用户手打的每个勾
+            if t["status"] != "pending":
+                cb_mark = t["status"]
+            mark = {"done": "[x]", "skipped": "[-]", "pending": "[ ]"}[cb_mark]
             out.append(f"- {mark} {cb_text}")
         for n in t["notes"]:
             out.append(f"- 💬 备注:{n}")
@@ -391,6 +404,19 @@ def cmd_undo(args):
     print(f"↩️ 任务 {num}「{t['title']}」已恢复为未完成")
 
 
+def cmd_sync(args):
+    """读取用户手打的勾,把文件规范成统一格式(标题 ✅、状态一致)。"""
+    d = args[0] if args else today_str()
+    path = task_file(d)
+    if not path.exists():
+        print(f"❌ {d} 没有任务文件。先跑 study.py today 生成")
+        sys.exit(1)
+    header, tasks = parse_tasks(path)
+    _rewrite(path, header, tasks)
+    print(f"🔄 已同步 {path.name} 的打勾状态:")
+    print_today(header, tasks)
+
+
 def cmd_remove(args):
     if not args:
         print("用法:python study.py remove <编号>(仅限未完成/已跳过的任务)")
@@ -503,6 +529,11 @@ def cmd_publish(args):
     if not task_file(d).exists() and not (NOTES_DIR / f"{d}.md").exists():
         print(f"❌ {d} 没有任务文件也没有笔记,没东西可推")
         sys.exit(1)
+    # 推送前先把所有任务文件的手动打勾同步成规范格式(幂等,无改动时不产生 diff)
+    if TASKS_DIR.exists():
+        for p in TASKS_DIR.glob("今日任务_*.md"):
+            h, ts = parse_tasks(p)
+            _rewrite(p, h, ts)
     git_run("add", "tasks", "notes")
     r = subprocess.run(["git", "-C", str(REPO_DIR), "commit",
                         "-m", f"docs: {d} 学习笔记"],
@@ -526,7 +557,7 @@ def cmd_finish(args):
     if not path.exists():
         print(f"❌ 今天({d})还没有任务文件。先跑 study.py today 生成")
         sys.exit(1)
-    _, tasks = parse_tasks(path)
+    header, tasks = parse_tasks(path)
     done = [t for t in tasks if t["status"] == "done"]
     if not done:
         print("❌ 今天一个任务都没完成,不生成笔记(已完成至少 1 个任务再收工)")
@@ -536,6 +567,7 @@ def cmd_finish(args):
         print(f"⚠️ {d} 的笔记已存在。要推送就跑:python study.py publish {d}")
         sys.exit(1)
     item_next = pointer_item()
+    _rewrite(path, header, tasks)          # 生成笔记前先把打勾状态同步进任务文件
     NOTES_DIR.mkdir(exist_ok=True)
     note_path.write_text(build_note(d, tasks, item_next), encoding="utf-8")
     print(f"📝 已生成笔记骨架:{note_path}")
@@ -609,6 +641,8 @@ def main():
         cmd_skip(rest)
     elif cmd == "remove":
         cmd_remove(rest)
+    elif cmd == "sync":
+        cmd_sync(rest)
     elif cmd == "finish":
         cmd_finish(rest)
     elif cmd == "publish":
