@@ -559,9 +559,10 @@ def git_run(*args):
     r = subprocess.run(["git", "-C", str(REPO_DIR), *args],
                        capture_output=True, text=True, encoding="utf-8")
     if r.returncode != 0:
-        print(f"❌ git {' '.join(args)} 失败:\n{r.stderr}")
+        print(f"❌ git {' '.join(args)} 失败:\n{r.stdout}\n{r.stderr}")
         sys.exit(1)
-    return (r.stdout or "").strip()
+    # git 的常规输出在 stdout、push 进度在 stderr,合并返回
+    return ((r.stdout or "") + (r.stderr or "")).strip()
 
 
 def cmd_publish(args):
