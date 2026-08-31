@@ -508,10 +508,11 @@ def cmd_publish(args):
                         "-m", f"docs: {d} 学习笔记"],
                        capture_output=True, text=True, encoding="utf-8")
     if r.returncode != 0:
-        if "nothing to commit" in r.stderr:
+        # git 的 "nothing to commit" 输出在 stdout,报错在 stderr,两边都查
+        if "nothing to commit" in r.stdout + r.stderr:
             print("📭 没有新改动,无需推送")
             sys.exit(0)
-        print(f"❌ git commit 失败:\n{r.stderr}")
+        print(f"❌ git commit 失败:\n{r.stdout}\n{r.stderr}")
         sys.exit(1)
     out = git_run("push")
     print(f"🚀 已推送 GitHub:\n{out}")
