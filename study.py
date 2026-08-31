@@ -509,7 +509,8 @@ def cmd_publish(args):
                        capture_output=True, text=True, encoding="utf-8")
     if r.returncode != 0:
         # git 的 "nothing to commit" 输出在 stdout,报错在 stderr,两边都查
-        if "nothing to commit" in r.stdout + r.stderr:
+        if ("nothing to commit" in r.stdout + r.stderr
+                or "no changes added" in r.stdout + r.stderr):
             print("📭 没有新改动,无需推送")
             sys.exit(0)
         print(f"❌ git commit 失败:\n{r.stdout}\n{r.stderr}")
