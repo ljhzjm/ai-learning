@@ -12,7 +12,7 @@
   python study.py remove 3         从今日清单删掉任务 3(仅限未完成/已跳过的)
   python study.py sync [日期]      同步清单:读取你手动打的勾,规范化标题与状态
   python study.py watch           后台监听任务文件:一变就自动同步,打勾后无需发消息
-  python study.py finish [--draft] 今日结束:生成学习笔记(骨架)+ 提交推送 GitHub
+  python study.py finish [日期] [--draft]  今日结束:生成学习笔记(骨架)+ 提交推送 GitHub
   python study.py publish [日期]    把指定日期的笔记+任务文件提交并推送
   python study.py log              最近完成记录(简历素材)
   python study.py --selftest       自检:解析计划文档 + 显示进度指针
@@ -592,7 +592,8 @@ def cmd_publish(args):
 
 def cmd_finish(args):
     draft = "--draft" in args
-    d = today_str()
+    dates = [a for a in args if a != "--draft"]
+    d = dates[0] if dates else today_str()   # 允许补收前一天的工(跨零点场景)
     path = task_file(d)
     if not path.exists():
         print(f"❌ 今天({d})还没有任务文件。先跑 study.py today 生成")
