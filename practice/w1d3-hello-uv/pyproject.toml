@@ -1,0 +1,19 @@
+[project]
+name = "w1d3-hello-uv"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+authors = [
+    { name = "ljh", email = "1540696924@qq.com" }
+]
+requires-python = ">=3.13"
+dependencies = [
+    "pydantic-settings>=2.15.0",
+]
+
+[project.scripts]
+w1d3-hello-uv = "w1d3_hello_uv:main"
+
+[build-system]
+requires = ["uv_build>=0.12.8,<0.13.0"]
+build-backend = "uv_build"

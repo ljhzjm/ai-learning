@@ -151,9 +151,10 @@ def parse_tasks(path: Path):
             header_lines.append(line)
             continue
         s = line.strip()
-        mcb = re.match(r"^- \[(.)\] (.*)$", s)          # - [x] / - [ ] / - [-]
+        # 兼容手打变体:括号内允许多余空格、X 大写(如 - [x ] / - [X])
+        mcb = re.match(r"^- \[([ xX-])\s*\]\s*(.*)$", s)
         if mcb:
-            mark = {"x": "done", " ": "pending", "-": "skipped"}[mcb.group(1)]
+            mark = {"x": "done", "X": "done", " ": "pending", "-": "skipped"}[mcb.group(1)]
             cur["checkboxes"].append((mark, mcb.group(2).strip()))
             continue
         mp = re.match(r"- 计划:第 (\d+) 周·(周.)", s)
