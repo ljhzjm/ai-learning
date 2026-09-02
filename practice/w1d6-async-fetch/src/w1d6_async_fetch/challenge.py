@@ -19,12 +19,16 @@ async def fetch(client: httpx.AsyncClient, url: str):
   dt = (time.perf_counter() - t0) * 1000
   return f"{r.status_code}  {dt:6.0f}ms  {url}"
 
-# 串行(基线:一个失败会中断整个循环 —— 这就是"没有隔离"的对照组)
+# 串行
 async def serial(client):
   t0 = time.perf_counter()
   for url in URLS:
-    print(await fetch(client, url))
-  return time.perf_counter() - t0
+    try:
+      r = await fetch(client, url)
+      print(r)
+    except Exception as e:
+      print(f"{type(e).__name__}  {url}")
+    return time.perf_counter() - t0
 
 # 并发:return_exceptions=True 让单个失败变成"结果"而不是炸弹
 async def parallel(client):
