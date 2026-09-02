@@ -1,0 +1,19 @@
+[project]
+name = "w1d6-async-fetch"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+authors = [
+    { name = "ljh", email = "1540696924@qq.com" }
+]
+requires-python = ">=3.13"
+dependencies = [
+    "httpx>=0.28.1",
+]
+
+[project.scripts]
+w1d6-async-fetch = "w1d6_async_fetch:main"
+
+[build-system]
+requires = ["uv_build>=0.12.8,<0.13.0"]
+build-backend = "uv_build"
