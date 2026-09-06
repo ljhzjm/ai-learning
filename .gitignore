@@ -9,6 +9,9 @@ venv/
 .env.*
 !.env.example
 
+# SQLite 数据库(生成物,跑 setup.py 重建)
+*.db
+
 # Node
 node_modules/
 
