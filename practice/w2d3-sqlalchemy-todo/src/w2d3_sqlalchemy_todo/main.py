@@ -8,12 +8,11 @@ from sqlalchemy.orm import Session
 
 from w2d3_sqlalchemy_todo.config import settings
 from w2d3_sqlalchemy_todo.db import SessionLocal, TodoNotFoundError, engine, get_db
-from w2d3_sqlalchemy_todo.models import Base, Todo
+from w2d3_sqlalchemy_todo.models import Todo
 from w2d3_sqlalchemy_todo.schemas import TodoIn, TodoOut, TodoUpdate
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    Base.metadata.create_all(engine)        # 表不存在就建(周四换成 Alembic)
     with SessionLocal() as db:              # 首次启动预置一条;PG 持久化,重启不会重复种
         if db.get(Todo, 1) is None:
             db.add(Todo(title="完成第 1 周综合练习"))
