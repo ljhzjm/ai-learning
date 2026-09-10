@@ -1,6 +1,6 @@
 """数据库通道:engine(连接池)+ session 工厂 + FastAPI 依赖。"""
 from collections.abc import Generator
-
+import redis
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker
 
@@ -28,3 +28,5 @@ class TodoNotFoundError(Exception):
     def __init__(self, todo_id: int):
         self.todo_id = todo_id
         super().__init__(f"待办 {todo_id} 不存在")
+
+redis_client = redis.Redis.from_url(settings.redis_url, decode_responses=True)
