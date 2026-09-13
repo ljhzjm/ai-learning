@@ -18,7 +18,7 @@ import redis as redis_lib
 async def lifespan(app: FastAPI):
     with SessionLocal() as db:              # 首次启动预置一条;PG 持久化,重启不会重复种
         if db.get(Todo, 1) is None:
-            db.add(Todo(title="完成第 1 周综合练习"))
+            db.add(Todo(title="完成第 2 周综合练习"))
             db.commit()
     print(f"[lifespan] {settings.app_name} 已启动")
     yield
