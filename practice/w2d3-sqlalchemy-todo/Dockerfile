@@ -11,6 +11,12 @@ RUN pip install --no-cache-dir -r requirements.txt
 # 再拷源代码 —— 改代码只重建这一层之后的层(依赖层缓存命中,秒级重建)
 COPY src ./src
 
+# 迁移脚本也要进镜像 —— 新环境靠 alembic upgrade head 建表
+COPY alembic.ini ./
+COPY alembic ./alembic
+
+
+
 # src 布局:让 Python 能在 /app/src 下找到 w2d3_sqlalchemy_todo 包
 ENV PYTHONPATH=/app/src
 
@@ -18,4 +24,7 @@ ENV PYTHONPATH=/app/src
 EXPOSE 8000
 
 # 容器启动时执行的命令(前台进程!容器生命周期 = 该进程生命周期)
-CMD ["uvicorn", "w2d3_sqlalchemy_todo.main:app", "--host", "0.0.0.0", "--port", "8000"]
+# CMD ["uvicorn", "w2d3_sqlalchemy_todo.main:app", "--host", "0.0.0.0", "--port", "8000"]
+COPY entrypoint.sh ./
+ENTRYPOINT ["sh", "./entrypoint.sh"]
+

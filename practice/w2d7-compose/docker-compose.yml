@@ -1,0 +1,43 @@
+# 一条命令拉起 后端+数据库+缓存:docker compose up -d
+services:
+  db:                                   # 服务 1:PostgreSQL
+    image: postgres:16-alpine           # 本地已有,不会去 Docker Hub 拉
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres       # 练习用;生产换成密钥管理
+      POSTGRES_DB: todo                 # 首次启动自动建库(宿主 pg-school 手建过,对比一下)
+    volumes:
+      - pg-data:/var/lib/postgresql/data   # 命名卷:数据比容器活得久
+    ports:
+      - "55432:5432"                    # 宿主 5432 被 pg-school 占了,故意换个口
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d todo"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  cache:                                # 服务 2:Redis
+    image: redis:7-alpine
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    # 故意不挂卷:缓存丢了可以重建,数据不金贵 —— 对比 db 服务想一想为什么待遇不同
+
+  api:                                  # 服务 3:FastAPI,复用周六的 Dockerfile
+    build: ../w2d3-sqlalchemy-todo
+    environment:
+      # 服务名就是域名!告别 host.docker.internal
+      TODO_DATABASE_URL: postgresql+psycopg://postgres:postgres@db:5432/todo
+      TODO_REDIS_URL: redis://cache:6379/0
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy      # 等 PG 真正就绪,不是"启动了"就行
+      cache:
+        condition: service_healthy
+
+volumes:
+  pg-data:                              # 顶层声明,才会创建命名卷
